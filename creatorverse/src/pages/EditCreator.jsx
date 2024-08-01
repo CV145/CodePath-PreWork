@@ -3,9 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import supabase from '../client';
 
 function EditCreator() {
-    const { id } = useParams(); // Get the id from the URL params
-    const navigate = useNavigate(); // Initialize the navigate hook
-    const [creator, setCreator] = useState(null);
+    const { id } = useParams();
+    const navigate = useNavigate();
     const [name, setName] = useState('');
     const [url, setUrl] = useState('');
     const [description, setDescription] = useState('');
@@ -13,91 +12,74 @@ function EditCreator() {
 
     useEffect(() => {
         async function fetchCreator() {
-            const parsedId = parseInt(id, 10); // Parse the id as an integer
-            console.log(`Fetching creator with id: ${id} (parsed: ${parsedId})`);
-            if (isNaN(parsedId)) {
-                console.error('Invalid ID:', id);
-                return;
-            }
             const { data, error } = await supabase
                 .from('creators')
                 .select('*')
-                .eq('id', parsedId)
+                .eq('id', id)
                 .single();
             if (error) {
                 console.error('Error fetching data:', error);
             } else {
-                console.log('Fetched creator data:', data);
-                setCreator(data);
                 setName(data.name);
                 setUrl(data.url);
                 setDescription(data.description);
                 setImageURL(data.imageURL);
             }
         }
+
         fetchCreator();
     }, [id]);
 
-    async function handleSubmit(event) {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const parsedId = parseInt(id, 10);
-        if (isNaN(parsedId)) {
-            console.error('Invalid ID:', id);
-            return;
-        }
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('creators')
             .update({ name, url, description, imageURL })
-            .eq('id', parsedId);
+            .eq('id', id);
         if (error) {
-            console.error('Error updating data:', error);
+            console.error('Error updating creator:', error);
         } else {
-            console.log('Creator updated:', data);
-            navigate('/show-creators'); // Redirect to the ShowCreators page
-            window.location.reload(); // Force page refresh
+            navigate('/show-creators');
         }
-    }
+    };
 
-    if (!creator) {
-        return <div>Loading...</div>;
-    }
+    const handleDelete = async () => {
+        const { error } = await supabase
+            .from('creators')
+            .delete()
+            .eq('id', id);
+        if (error) {
+            console.error('Error deleting creator:', error);
+        } else {
+            navigate('/show-creators');
+        }
+    };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <label>
-                Name:
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-            </label>
-            <label>
-                URL:
-                <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                />
-            </label>
-            <label>
-                Description:
-                <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
-            </label>
-            <label>
-                Image URL:
-                <input
-                    type="text"
-                    value={imageURL}
-                    onChange={(e) => setImageURL(e.target.value)}
-                />
-            </label>
-            <button type="submit">Update Creator</button>
+        <div>
+            <h2>Edit Creator</h2>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Name:
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+                </label>
+                <label>
+                    URL:
+                    <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} />
+                </label>
+                <label>
+                    Description:
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                </label>
+                <label>
+                    Image URL (optional):
+                    <input type="text" value={imageURL} onChange={(e) => setImageURL(e.target.value)} />
+                </label>
+                <button type="submit" className="button">Update Creator</button>
+            </form>
+            <button onClick={handleDelete} className="button delete">Delete</button>
             <button onClick={() => navigate('/show-creators')} className="button secondary">Back</button>
-        </form>
+        </div>
     );
 }
 
